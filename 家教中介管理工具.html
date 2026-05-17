@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>家教中介管理工具</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'PingFang SC','Helvetica Neue',sans-serif;background:#f5f5f0;color:#1a1a1a;min-height:100vh}
+.header{background:#1a1a1a;color:#fff;padding:16px 20px;display:flex;align-items:center;gap:10px}
+.header h1{font-size:18px;font-weight:500}
+.header span{font-size:20px}
+.tabs{display:flex;background:#fff;border-bottom:1px solid #e8e8e0;overflow-x:auto}
+.tab{flex:1;padding:12px 8px;font-size:13px;text-align:center;cursor:pointer;border:none;background:none;color:#888;border-bottom:2px solid transparent;white-space:nowrap;min-width:70px}
+.tab.active{color:#1a1a1a;border-bottom:2px solid #1a1a1a;font-weight:500}
+.page{display:none;padding:16px}
+.page.active{display:block}
+.metric-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px}
+.metric{background:#fff;border-radius:12px;padding:14px 10px;text-align:center;border:1px solid #e8e8e0}
+.metric-val{font-size:20px;font-weight:600;color:#1a1a1a}
+.metric-label{font-size:11px;color:#888;margin-top:4px}
+.section-title{font-size:12px;font-weight:500;color:#888;letter-spacing:0.5px;text-transform:uppercase;margin-bottom:10px}
+.card{background:#fff;border-radius:12px;border:1px solid #e8e8e0;padding:14px 16px;margin-bottom:10px}
+.form-group{margin-bottom:12px}
+.form-group label{display:block;font-size:12px;color:#888;margin-bottom:5px}
+.form-group input,.form-group select{width:100%;padding:10px 12px;border-radius:8px;border:1px solid #e0e0d8;font-size:14px;background:#fff;color:#1a1a1a;-webkit-appearance:none}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.commission-preview{background:#f5f5f0;border-radius:8px;padding:10px 12px;font-size:13px;color:#555;margin-bottom:14px}
+.commission-preview strong{color:#1a1a1a}
+.btn{padding:10px 20px;border-radius:8px;font-size:14px;cursor:pointer;border:1px solid #e0e0d8;background:#fff;color:#1a1a1a;font-family:inherit}
+.btn-primary{background:#1a1a1a;color:#fff;border-color:#1a1a1a;width:100%}
+.btn-sm{padding:5px 10px;font-size:12px}
+.badge{display:inline-block;padding:3px 8px;border-radius:6px;font-size:11px;font-weight:500}
+.badge-pending{background:#FFF3E0;color:#E65100}
+.badge-matched{background:#E3F2FD;color:#1565C0}
+.badge-done{background:#E8F5E9;color:#2E7D32}
+.order-card{background:#fff;border-radius:12px;border:1px solid #e8e8e0;padding:14px 16px;margin-bottom:10px}
+.order-title{font-size:15px;font-weight:500;margin-bottom:4px}
+.order-sub{font-size:12px;color:#888;margin-top:3px;line-height:1.6}
+.order-footer{display:flex;align-items:center;gap:8px;margin-top:10px;padding-top:10px;border-top:1px solid #f0f0e8}
+.order-footer select{flex:1;padding:6px 8px;border-radius:6px;border:1px solid #e0e0d8;font-size:12px;background:#fff;color:#1a1a1a}
+.delete-btn{padding:5px 10px;border-radius:6px;border:1px solid #ffd0d0;background:#fff5f5;color:#c0392b;font-size:12px;cursor:pointer}
+.filter-bar{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.filter-bar select{padding:6px 10px;border-radius:8px;border:1px solid #e0e0d8;font-size:13px;background:#fff;color:#1a1a1a}
+.empty{text-align:center;padding:40px 20px;color:#aaa;font-size:14px}
+.income-row{display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid #f0f0e8}
+.income-row:last-child{border-bottom:none}
+.income-amount{font-size:18px;font-weight:600;color:#2E7D32}
+.fab{position:fixed;bottom:24px;right:20px;width:52px;height:52px;border-radius:50%;background:#1a1a1a;color:#fff;font-size:24px;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 16px rgba(0,0,0,0.2)}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <span>📋</span>
+  <h1>家教中介管理</h1>
+</div>
+
+<div class="tabs">
+  <button class="tab active" onclick="switchTab('dashboard')">概览</button>
+  <button class="tab" onclick="switchTab('add')">新增需求</button>
+  <button class="tab" onclick="switchTab('orders')">订单列表</button>
+  <button class="tab" onclick="switchTab('income')">佣金收入</button>
+</div>
+
+<!-- 概览 -->
+<div id="page-dashboard" class="page active">
+  <div class="metric-grid">
+    <div class="metric"><div class="metric-val" id="m-total">0</div><div class="metric-label">总需求数</div></div>
+    <div class="metric"><div class="metric-val" id="m-active">0</div><div class="metric-label">进行中</div></div>
+    <div class="metric"><div class="metric-val" id="m-income">¥0</div><div class="metric-label">累计佣金</div></div>
+  </div>
+  <div class="section-title">最近需求</div>
+  <div id="recent-list"><div class="empty">暂无数据<br>点击「新增需求」开始记录</div></div>
+</div>
+
+<!-- 新增需求 -->
+<div id="page-add" class="page">
+  <div class="card">
+    <div class="form-row">
+      <div class="form-group"><label>家长姓名</label><input id="f-name" type="text" placeholder="例：张妈妈"></div>
+      <div class="form-group"><label>联系方式</label><input id="f-contact" type="text" placeholder="微信号"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>科目</label>
+        <select id="f-subject">
+          <option>数学</option><option>英语</option><option>语文</option><option>物理</option><option>化学</option><option>生物</option><option>历史</option><option>地理</option><option>其他</option>
+        </select>
+      </div>
+      <div class="form-group"><label>年级</label>
+        <select id="f-grade">
+          <option>小学1-3年级</option><option>小学4-6年级</option><option>初一</option><option>初二</option><option>初三</option><option>高一</option><option>高二</option><option>高三</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-group"><label>上课地点</label><input id="f-location" type="text" placeholder="例：学府路附近、线上"></div>
+    <div class="form-row">
+      <div class="form-group"><label>预算（元/小时）</label><input id="f-budget" type="number" placeholder="例：80" oninput="updatePreview()"></div>
+      <div class="form-group"><label>月课时（小时）</label><input id="f-hours" type="number" placeholder="例：8" oninput="updatePreview()"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>我的佣金比例（%）</label><input id="f-rate" type="number" placeholder="30" value="30" oninput="updatePreview()"></div>
+      <div class="form-group"><label>备注</label><input id="f-note" type="text" placeholder="其他要求"></div>
+    </div>
+    <div class="commission-preview" id="commission-preview">填写预算、课时和比例后自动计算预计佣金</div>
+    <button class="btn btn-primary" onclick="addOrder()">✓ 保存需求</button>
+  </div>
+</div>
+
+<!-- 订单列表 -->
+<div id="page-orders" class="page">
+  <div class="filter-bar">
+    <div class="section-title" style="margin:0">全部订单</div>
+    <select id="filter-status" onchange="renderOrders()">
+      <option value="all">全部状态</option>
+      <option value="pending">待匹配</option>
+      <option value="matched">已匹配</option>
+      <option value="done">已成交</option>
+    </select>
+  </div>
+  <div id="order-list"></div>
+</div>
+
+<!-- 佣金收入 -->
+<div id="page-income" class="page">
+  <div class="metric-grid">
+    <div class="metric"><div class="metric-val" id="i-total">¥0</div><div class="metric-label">累计佣金</div></div>
+    <div class="metric"><div class="metric-val" id="i-done">0</div><div class="metric-label">已成交单数</div></div>
+    <div class="metric"><div class="metric-val" id="i-avg">¥0</div><div class="metric-label">平均每单</div></div>
+  </div>
+  <div class="section-title">成交记录</div>
+  <div class="card" style="padding:0 16px">
+    <div id="income-list"></div>
+  </div>
+</div>
+
+<script>
+let orders = JSON.parse(localStorage.getItem('jjzj') || '[]');
+function save(){localStorage.setItem('jjzj',JSON.stringify(orders))}
+
+function switchTab(t){
+  document.querySelectorAll('.tab').forEach((el,i)=>{el.classList.toggle('active',['dashboard','add','orders','income'][i]===t)});
+  document.querySelectorAll('.page').forEach(el=>el.classList.remove('active'));
+  document.getElementById('page-'+t).classList.add('active');
+  if(t==='dashboard')renderDashboard();
+  if(t==='orders')renderOrders();
+  if(t==='income')renderIncome();
+}
+
+function updatePreview(){
+  const b=+document.getElementById('f-budget').value;
+  const h=+document.getElementById('f-hours').value;
+  const r=+document.getElementById('f-rate').value;
+  const el=document.getElementById('commission-preview');
+  if(b&&h&&r){
+    const comm=Math.round(b*h*(r/100));
+    el.innerHTML=`预计佣金：<strong>¥${comm}</strong>（月课费 ¥${b*h} × ${r}%）`;
+  } else {
+    el.textContent='填写预算、课时和比例后自动计算预计佣金';
+  }
+}
+
+function addOrder(){
+  const name=document.getElementById('f-name').value.trim();
+  const budget=+document.getElementById('f-budget').value;
+  const hours=+document.getElementById('f-hours').value;
+  const rate=+document.getElementById('f-rate').value;
+  if(!name){alert('请填写家长姓名');return}
+  if(!budget||!hours||!rate){alert('请填写预算、课时和佣金比例');return}
+  orders.unshift({
+    id:Date.now(),
+    name,
+    contact:document.getElementById('f-contact').value.trim(),
+    subject:document.getElementById('f-subject').value,
+    grade:document.getElementById('f-grade').value,
+    location:document.getElementById('f-location').value.trim(),
+    note:document.getElementById('f-note').value.trim(),
+    budget,hours,rate,
+    commission:Math.round(budget*hours*(rate/100)),
+    status:'pending',
+    date:new Date().toLocaleDateString('zh-CN')
+  });
+  save();
+  ['f-name','f-contact','f-location','f-budget','f-hours','f-note'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('f-rate').value='30';
+  document.getElementById('commission-preview').textContent='填写预算、课时和比例后自动计算预计佣金';
+  alert('需求已保存！');
+  switchTab('orders');
+}
+
+function setStatus(id,status){
+  const o=orders.find(x=>x.id===id);
+  if(o){o.status=status;save();renderOrders();renderDashboard();}
+}
+
+function deleteOrder(id){
+  if(!confirm('确认删除？'))return;
+  orders=orders.filter(x=>x.id!==id);save();renderOrders();renderDashboard();
+}
+
+const smap={pending:{label:'待匹配',cls:'badge-pending'},matched:{label:'已匹配',cls:'badge-matched'},done:{label:'已成交',cls:'badge-done'}};
+
+function orderHTML(o){
+  const s=smap[o.status];
+  return `<div class="order-card">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start">
+      <div class="order-title">${o.name}</div>
+      <span class="badge ${s.cls}">${s.label}</span>
+    </div>
+    <div class="order-sub">📚 ${o.subject} · ${o.grade}</div>
+    <div class="order-sub">📍 ${o.location||'地点未填'} · ¥${o.budget}/h · ${o.hours}h/月</div>
+    ${o.contact?`<div class="order-sub">💬 ${o.contact}</div>`:''}
+    ${o.note?`<div class="order-sub">📝 ${o.note}</div>`:''}
+    <div class="order-sub">🗓 ${o.date} · 预计佣金 <strong style="color:#2E7D32">¥${o.commission}</strong></div>
+    <div class="order-footer">
+      <select onchange="setStatus(${o.id},this.value)">
+        <option value="pending" ${o.status==='pending'?'selected':''}>待匹配</option>
+        <option value="matched" ${o.status==='matched'?'selected':''}>已匹配</option>
+        <option value="done" ${o.status==='done'?'selected':''}>已成交</option>
+      </select>
+      <button class="delete-btn" onclick="deleteOrder(${o.id})">删除</button>
+    </div>
+  </div>`;
+}
+
+function renderDashboard(){
+  document.getElementById('m-total').textContent=orders.length;
+  document.getElementById('m-active').textContent=orders.filter(o=>o.status!=='done').length;
+  const total=orders.filter(o=>o.status==='done').reduce((s,o)=>s+o.commission,0);
+  document.getElementById('m-income').textContent='¥'+total;
+  const recent=orders.slice(0,3);
+  document.getElementById('recent-list').innerHTML=recent.length?recent.map(orderHTML).join(''):'<div class="empty">暂无数据<br>点击「新增需求」开始记录</div>';
+}
+
+function renderOrders(){
+  const filter=document.getElementById('filter-status').value;
+  const filtered=filter==='all'?orders:orders.filter(o=>o.status===filter);
+  document.getElementById('order-list').innerHTML=filtered.length?filtered.map(orderHTML).join(''):'<div class="empty">暂无订单</div>';
+}
+
+function renderIncome(){
+  const done=orders.filter(o=>o.status==='done');
+  const total=done.reduce((s,o)=>s+o.commission,0);
+  document.getElementById('i-total').textContent='¥'+total;
+  document.getElementById('i-done').textContent=done.length;
+  document.getElementById('i-avg').textContent=done.length?'¥'+Math.round(total/done.length):'¥0';
+  document.getElementById('income-list').innerHTML=done.length?done.map(o=>`
+    <div class="income-row">
+      <div>
+        <div style="font-size:14px;font-weight:500">${o.name} · ${o.subject}</div>
+        <div style="font-size:12px;color:#888;margin-top:2px">${o.date} · ¥${o.budget*o.hours} × ${o.rate}%</div>
+      </div>
+      <div class="income-amount">¥${o.commission}</div>
+    </div>`).join(''):'<div class="empty" style="padding:30px">还没有成交订单</div>';
+}
+
+renderDashboard();
+</script>
+</body>
+</html>
